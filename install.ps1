@@ -3,39 +3,53 @@ $ErrorActionPreference = "Stop"
 $repo = "KhornVictor/Open"
 $version = "v1.0.0"
 
-$installDir = "$env:LOCALAPPDATA\open-cli"
-$exePath = "$installDir\open.exe"
+$installDir = "C:\Tool\Open"
+$exePath = "$installDir\Open.exe"
+$configPath = "$installDir\apps.toml"
 
-Write-Host "Installing open-cli..."
+Write-Host "Installing Open..." -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 
-# Download executable
-$url = "https://github.com/$repo/releases/download/$version/open.exe"
+# Close any running instances of Open to prevent file lock
+$running = Get-Process -Name "Open" -ErrorAction SilentlyContinue
+if ($running) {
+    Write-Host "Closing active Open instance..." -ForegroundColor Yellow
+    $running | Stop-Process -Force
+    Start-Sleep -Milliseconds 500
+}
 
-Write-Host "Downloading open.exe..."
+# Download executable
+$url = "https://github.com/$repo/releases/download/$version/Open.exe"
+Write-Host "Downloading Open.exe..." -ForegroundColor Cyan
 
 Invoke-WebRequest `
     -Uri $url `
     -OutFile $exePath
 
+# Download default apps.toml if it does not already exist
+if (-not (Test-Path $configPath)) {
+    Write-Host "Downloading default apps.toml configuration..." -ForegroundColor Cyan
+    $configUrl = "https://raw.githubusercontent.com/$repo/main/apps.toml"
+    try {
+        Invoke-WebRequest -Uri $configUrl -OutFile $configPath
+    } catch {
+        Write-Host "Note: apps.toml could not be fetched; using built-in defaults." -ForegroundColor Yellow
+    }
+}
+
 # Add installation directory to user PATH
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 
 if ($userPath -notlike "*$installDir*") {
-
-    [Environment]::SetEnvironmentVariable(
-        "Path",
-        "$userPath;$installDir",
-        "User"
-    )
-
-    Write-Host "Added open-cli to PATH."
+    $newPath = if ([string]::IsNullOrWhiteSpace($userPath)) { $installDir } else { "$userPath;$installDir" }
+    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+    $env:Path += ";$installDir"
+    Write-Host "Added $installDir to user PATH." -ForegroundColor Green
 }
 
 Write-Host ""
-Write-Host "Installation completed!"
+Write-Host "Installation completed successfully!" -ForegroundColor Green
 Write-Host ""
-Write-Host "Restart your terminal and run:"
-Write-Host ""
-Write-Host "    open"
+Write-Host "Run 'open' in your terminal to start:"
+Write-Host "    open" -ForegroundColor Yellow
 Write-Host ""
