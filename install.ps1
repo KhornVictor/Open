@@ -10,7 +10,6 @@ $configPath = "$installDir\apps.toml"
 Write-Host "Installing Open..." -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 
-# Close any running instances of Open to prevent file lock
 $running = Get-Process -Name "Open" -ErrorAction SilentlyContinue
 if ($running) {
     Write-Host "Closing active Open instance..." -ForegroundColor Yellow
@@ -18,7 +17,6 @@ if ($running) {
     Start-Sleep -Milliseconds 500
 }
 
-# Download executable
 $url = "https://github.com/$repo/releases/download/$version/Open.exe"
 Write-Host "Downloading Open.exe..." -ForegroundColor Cyan
 
@@ -26,7 +24,6 @@ Invoke-WebRequest `
     -Uri $url `
     -OutFile $exePath
 
-# Download default apps.toml if it does not already exist
 if (-not (Test-Path $configPath)) {
     Write-Host "Downloading default apps.toml configuration..." -ForegroundColor Cyan
     $configUrl = "https://raw.githubusercontent.com/$repo/main/apps.toml"
@@ -37,7 +34,6 @@ if (-not (Test-Path $configPath)) {
     }
 }
 
-# Add installation directory to user PATH
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 
 if ($userPath -notlike "*$installDir*") {
