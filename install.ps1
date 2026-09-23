@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $repo = "KhornVictor/Open"
-$version = "v1.0.0"
+$version = "v1.0.1"
 
 $installDir = "C:\Tool\Open"
 $exePath = "$installDir\Open.exe"
