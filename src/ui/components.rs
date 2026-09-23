@@ -118,18 +118,27 @@ pub fn render_controls(config_path: &Path) {
     println!(
         "  {} {}   {} {}   {} {}   {} {}",
         ansi::bold("[1-N]"),
-        ansi::gray("Select by #"),
-        ansi::bold("[name]"),
-        ansi::gray("Type name/search"),
-        ansi::bold("[c]"),
-        ansi::gray("Edit config"),
-        ansi::bold("[r]"),
-        ansi::gray("Reload")
+        ansi::gray("Launch"),
+        ansi::bold("[a]"),
+        ansi::green("Add"),
+        ansi::bold("[u]"),
+        ansi::yellow("Update"),
+        ansi::bold("[d]"),
+        ansi::red("Delete")
     );
     println!(
-        "  {} {}   {} {}",
+        "  {} {}   {} {}   {} {}   {} {}",
+        ansi::bold("[c]"),
+        ansi::blue("Config file"),
+        ansi::bold("[r]"),
+        ansi::cyan("Reload"),
         ansi::bold("[0/q]"),
         ansi::gray("Exit"),
+        ansi::bold("[name]"),
+        ansi::gray("Search/launch")
+    );
+    println!(
+        "  {} {}",
         ansi::dim("Config:"),
         ansi::dim(&config_path.display().to_string())
     );
@@ -138,7 +147,26 @@ pub fn render_controls(config_path: &Path) {
 }
 
 pub fn render_prompt() {
-    print!("  {} Choose application: ", ansi::cyan("❯"));
+    print!("  {} Choose option or application: ", ansi::cyan("❯"));
+}
+
+pub fn render_app_details(app: &Application, index: usize) {
+    println!();
+    println!("  {}", ansi::bold(&format!("Application #{} Details:", index)));
+    println!("  {}", ansi::dim("───────────────────────────────────────────────────"));
+    println!("    {}        {}", ansi::gray("Name:"), ansi::bold(&app.name));
+    println!("    {}      {}", ansi::gray("Target:"), ansi::cyan(&app.target));
+    if !app.aliases.is_empty() {
+        println!("    {}     {}", ansi::gray("Aliases:"), ansi::yellow(&app.aliases.join(", ")));
+    }
+    if let Some(ref cat) = app.category {
+        println!("    {}    {}", ansi::gray("Category:"), ansi::magenta(cat));
+    }
+    if !app.description.is_empty() && app.description != app.target {
+        println!("    {} {}", ansi::gray("Description:"), ansi::dim(&app.description));
+    }
+    println!("  {}", ansi::dim("───────────────────────────────────────────────────"));
+    println!();
 }
 
 pub fn render_success(msg: &str) {

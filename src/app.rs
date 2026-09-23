@@ -28,6 +28,18 @@ impl Application {
         self
     }
 
+    #[allow(dead_code)]
+    pub fn with_category(mut self, category: Option<String>) -> Self {
+        self.category = category;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_description(mut self, description: String) -> Self {
+        self.description = description;
+        self
+    }
+
     /// Checks if a query exactly matches the name or an alias (case-insensitive)
     pub fn is_exact_match(&self, query: &str) -> bool {
         let q = query.trim().to_lowercase();

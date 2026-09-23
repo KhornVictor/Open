@@ -42,3 +42,8 @@ target = "notepad.exe"
 name = "Youtube"
 aliases = ["yt"]
 target = "https://youtube.com"
+
+[[app]]
+name = "Gemini"
+aliases = ["gemini"]
+target = "https://gemini.google.com/app"

@@ -84,8 +84,57 @@ fn handle_user_input(
         return (LoopAction::Exit, None);
     }
 
+    // Add app
+    if lower == "a" || lower == "add" || lower == "create" || lower == "new" {
+        return interactive_add(config);
+    }
+    if lower.starts_with("add ") || lower.starts_with("create ") || lower.starts_with("new ") {
+        let parts: Vec<&str> = input.split_whitespace().collect();
+        if parts.len() >= 3 {
+            let name = parts[1].to_string();
+            let target = parts[2..].join(" ");
+            let app = Application::new(&name, &target, &target, None::<String>);
+            return match config.add_app(app) {
+                Ok(()) => (
+                    LoopAction::Continue,
+                    Some(Notification::Success(format!("Added '{}' ({})", name, target))),
+                ),
+                Err(e) => (
+                    LoopAction::Continue,
+                    Some(Notification::Error(e)),
+                ),
+            };
+        } else {
+            return interactive_add(config);
+        }
+    }
+
+    // Update app
+    if lower == "u" || lower == "update" || lower == "edit" {
+        return interactive_update(None, config);
+    }
+    if lower.starts_with("update ") || lower.starts_with("u ") || lower.starts_with("edit ") {
+        let rest = input.split_once(' ').map(|x| x.1.trim()).unwrap_or("");
+        return interactive_update(Some(rest), config);
+    }
+
+    // Delete / Remove app
+    if lower == "d" || lower == "del" || lower == "delete" || lower == "rm" || lower == "remove" {
+        return interactive_delete(None, config);
+    }
+    if lower.starts_with("rm ") || lower.starts_with("del ") || lower.starts_with("delete ") || lower.starts_with("remove ") || lower.starts_with("d ") {
+        let rest = input.split_once(' ').map(|x| x.1.trim()).unwrap_or("");
+        return interactive_delete(Some(rest), config);
+    }
+
+    // Show details
+    if lower.starts_with("show ") || lower.starts_with("info ") || lower.starts_with("s ") {
+        let rest = input.split_once(' ').map(|x| x.1.trim()).unwrap_or("");
+        return interactive_show(rest, config);
+    }
+
     // Check config command
-    if lower == "c" || lower == "config" || lower == "edit" {
+    if lower == "c" || lower == "config" {
         match launcher::open_in_editor(&config.path) {
             Ok(_) => (
                 LoopAction::Continue,
@@ -152,11 +201,236 @@ fn handle_user_input(
             (
                 LoopAction::Continue,
                 Some(Notification::Error(format!(
-                    "Unknown command or application: '{}'. Type a number, name, or 'q' to exit.",
+                    "Unknown command or application: '{}'. Type a number, name, [a]dd, [u]pdate, [d]elete, or 'q' to exit.",
                     input
                 ))),
             )
         }
+    }
+}
+
+fn is_cancel(s: &str) -> bool {
+    let lower = s.trim().to_lowercase();
+    lower == "cancel" || lower == ":q"
+}
+
+fn prompt_ui(msg: &str) -> Option<String> {
+    print!("{}", msg);
+    let _ = io::stdout().flush();
+    let mut buf = String::new();
+    if io::stdin().read_line(&mut buf).is_ok() {
+        Some(buf.trim().to_string())
+    } else {
+        None
+    }
+}
+
+fn prompt_ui_default(label: &str, default: &str) -> Option<String> {
+    if default.is_empty() {
+        print!("  {}: ", label);
+    } else {
+        print!("  {} [{}]: ", label, ansi::cyan(default));
+    }
+    let _ = io::stdout().flush();
+    let mut buf = String::new();
+    if io::stdin().read_line(&mut buf).is_ok() {
+        let trimmed = buf.trim();
+        if trimmed.is_empty() {
+            Some(default.to_string())
+        } else {
+            Some(trimmed.to_string())
+        }
+    } else {
+        None
+    }
+}
+
+fn interactive_add(config: &mut Config) -> (LoopAction, Option<Notification>) {
+    println!();
+    println!("  {}", ansi::bold(&ansi::green("── Add New Application ──")));
+    println!("  {}", ansi::dim("(Leave empty or type 'cancel' to abort)"));
+    println!();
+
+    let name = match prompt_ui("  Application Name: ") {
+        Some(s) if !s.trim().is_empty() && !is_cancel(&s) => s.trim().to_string(),
+        _ => return (LoopAction::Continue, Some(Notification::Info("Add cancelled.".into()))),
+    };
+
+    let target = match prompt_ui("  Target (URL, protocol, command): ") {
+        Some(s) if !s.trim().is_empty() && !is_cancel(&s) => s.trim().to_string(),
+        _ => return (LoopAction::Continue, Some(Notification::Info("Add cancelled (target required).".into()))),
+    };
+
+    let aliases_str = prompt_ui("  Aliases (comma-separated, optional): ").unwrap_or_default();
+    if is_cancel(&aliases_str) {
+        return (LoopAction::Continue, Some(Notification::Info("Add cancelled.".into())));
+    }
+    let aliases: Vec<String> = aliases_str
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    let category = match prompt_ui("  Category (optional): ") {
+        Some(s) if is_cancel(&s) => return (LoopAction::Continue, Some(Notification::Info("Add cancelled.".into()))),
+        Some(s) if !s.trim().is_empty() => Some(s.trim().to_string()),
+        _ => None,
+    };
+
+    let description = match prompt_ui("  Description (optional): ") {
+        Some(s) if is_cancel(&s) => return (LoopAction::Continue, Some(Notification::Info("Add cancelled.".into()))),
+        Some(s) if !s.trim().is_empty() => s.trim().to_string(),
+        _ => target.clone(),
+    };
+
+    let app = Application::new(&name, &target, &description, category).with_aliases(aliases);
+    match config.add_app(app) {
+        Ok(()) => (
+            LoopAction::Continue,
+            Some(Notification::Success(format!("Added '{}' ({})", name, target))),
+        ),
+        Err(e) => (
+            LoopAction::Continue,
+            Some(Notification::Error(e)),
+        ),
+    }
+}
+
+fn interactive_update(query_opt: Option<&str>, config: &mut Config) -> (LoopAction, Option<Notification>) {
+    let query = match query_opt {
+        Some(q) if !q.trim().is_empty() => q.trim().to_string(),
+        _ => {
+            println!();
+            match prompt_ui("  Enter application # or name to update (or Enter to cancel): ") {
+                Some(q) if !q.trim().is_empty() && !is_cancel(&q) => q.trim().to_string(),
+                _ => return (LoopAction::Continue, Some(Notification::Info("Update cancelled.".into()))),
+            }
+        }
+    };
+
+    let index = match config.resolve_index(&query) {
+        Some(idx) => idx,
+        None => {
+            return (
+                LoopAction::Continue,
+                Some(Notification::Error(format!("Application '{}' not found in configuration.", query))),
+            );
+        }
+    };
+
+    let existing = config.applications[index].clone();
+
+    println!();
+    println!("  {}", ansi::bold(&ansi::yellow(&format!("── Update '{}' (#{}) ──", existing.name, index + 1))));
+    println!("  {}", ansi::dim("(Press Enter to keep current value, or type 'cancel' to abort)"));
+    println!();
+
+    let name = match prompt_ui_default("  Name", &existing.name) {
+        Some(s) if is_cancel(&s) => return (LoopAction::Continue, Some(Notification::Info("Update cancelled.".into()))),
+        Some(s) if !s.trim().is_empty() => s.trim().to_string(),
+        _ => existing.name.clone(),
+    };
+
+    let target = match prompt_ui_default("  Target", &existing.target) {
+        Some(s) if is_cancel(&s) => return (LoopAction::Continue, Some(Notification::Info("Update cancelled.".into()))),
+        Some(s) if !s.trim().is_empty() => s.trim().to_string(),
+        _ => existing.target.clone(),
+    };
+
+    let current_aliases = existing.aliases.join(", ");
+    let aliases_str = match prompt_ui_default("  Aliases", &current_aliases) {
+        Some(s) if is_cancel(&s) => return (LoopAction::Continue, Some(Notification::Info("Update cancelled.".into()))),
+        Some(s) => s,
+        _ => current_aliases,
+    };
+    let aliases: Vec<String> = aliases_str
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    let current_cat = existing.category.as_deref().unwrap_or("");
+    let category = match prompt_ui_default("  Category", current_cat) {
+        Some(s) if is_cancel(&s) => return (LoopAction::Continue, Some(Notification::Info("Update cancelled.".into()))),
+        Some(s) if !s.trim().is_empty() => Some(s.trim().to_string()),
+        _ => None,
+    };
+
+    let current_desc = if existing.description == existing.target { "" } else { &existing.description };
+    let description = match prompt_ui_default("  Description", current_desc) {
+        Some(s) if is_cancel(&s) => return (LoopAction::Continue, Some(Notification::Info("Update cancelled.".into()))),
+        Some(s) if !s.trim().is_empty() => s.trim().to_string(),
+        _ => target.clone(),
+    };
+
+    let updated = Application::new(&name, &target, &description, category).with_aliases(aliases);
+    match config.update_app(index, updated) {
+        Ok(()) => (
+            LoopAction::Continue,
+            Some(Notification::Success(format!("Updated '{}' (#{}).", name, index + 1))),
+        ),
+        Err(e) => (
+            LoopAction::Continue,
+            Some(Notification::Error(e)),
+        ),
+    }
+}
+
+fn interactive_delete(query_opt: Option<&str>, config: &mut Config) -> (LoopAction, Option<Notification>) {
+    let query = match query_opt {
+        Some(q) if !q.trim().is_empty() => q.trim().to_string(),
+        _ => {
+            println!();
+            match prompt_ui("  Enter application # or name to delete (or Enter to cancel): ") {
+                Some(q) if !q.trim().is_empty() && !is_cancel(&q) => q.trim().to_string(),
+                _ => return (LoopAction::Continue, Some(Notification::Info("Delete cancelled.".into()))),
+            }
+        }
+    };
+
+    let index = match config.resolve_index(&query) {
+        Some(idx) => idx,
+        None => {
+            return (
+                LoopAction::Continue,
+                Some(Notification::Error(format!("Application '{}' not found in configuration.", query))),
+            );
+        }
+    };
+
+    let app_name = config.applications[index].name.clone();
+    let prompt_msg = format!("  Delete '{}' (#{})? [y/N]: ", ansi::bold(&app_name), index + 1);
+    match prompt_ui(&prompt_msg) {
+        Some(ans) if ans.trim().eq_ignore_ascii_case("y") || ans.trim().eq_ignore_ascii_case("yes") => {
+            match config.remove_app_at(index) {
+                Ok(removed) => (
+                    LoopAction::Continue,
+                    Some(Notification::Success(format!("Deleted '{}' (#{}).", removed.name, index + 1))),
+                ),
+                Err(e) => (
+                    LoopAction::Continue,
+                    Some(Notification::Error(e)),
+                ),
+            }
+        }
+        _ => (
+            LoopAction::Continue,
+            Some(Notification::Info(format!("Deletion of '{}' cancelled.", app_name))),
+        ),
+    }
+}
+
+fn interactive_show(query: &str, config: &Config) -> (LoopAction, Option<Notification>) {
+    match config.resolve_index(query) {
+        Some(idx) => {
+            components::render_app_details(&config.applications[idx], idx + 1);
+            let _ = prompt_ui("  Press Enter to return to menu... ");
+            (LoopAction::Continue, None)
+        }
+        None => (
+            LoopAction::Continue,
+            Some(Notification::Error(format!("Application '{}' not found.", query))),
+        ),
     }
 }
 
