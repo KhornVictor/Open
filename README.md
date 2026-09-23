@@ -1,7 +1,7 @@
 # 🚀 Open
 
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange.svg)](https://www.rust-lang.org)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](Cargo.toml)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)](Cargo.toml)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 
