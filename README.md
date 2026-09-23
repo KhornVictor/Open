@@ -26,12 +26,12 @@
 
 Run the included [install.ps1](install.ps1) script or execute:
 
-```powershell
+```shell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 Or via remote web script:
-```powershell
+```shell
 irm https://raw.githubusercontent.com/KhornVictor/Open/main/install.ps1 | iex
 ```
 
@@ -59,7 +59,7 @@ target\release\Open.exe
 ### Interactive Mode
 Run `open` without arguments to enter the interactive menu:
 
-```powershell
+```shell
 open
 ```
 
@@ -107,7 +107,7 @@ open
 
 If an application is not found in configuration:
 
-```powershell
+```shell
 open obdian
 ```
 
