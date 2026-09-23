@@ -47,3 +47,8 @@ target = "https://youtube.com"
 name = "Gemini"
 aliases = ["gemini"]
 target = "https://gemini.google.com/app"
+
+[[app]]
+name = "ChatGPT"
+aliases = ["chatgpt"]
+target = "https://chatgpt.com/"
