@@ -2,54 +2,43 @@
 name = "Obsidian"
 aliases = ["obs", "notes"]
 target = "obsidian://"
-description = "Markdown knowledge base & personal wiki"
-category = "Productivity"
 
 [[app]]
 name = "Google Chrome"
 aliases = ["chrome", "browser", "google"]
 target = "https://google.com"
-description = "Default web browser"
-category = "Internet"
 
 [[app]]
 name = "Discord"
 aliases = ["dc"]
 target = "discord://"
-description = "Chat, voice & community servers"
-category = "Communication"
 
 [[app]]
 name = "Spotify"
 aliases = ["music", "sp"]
 target = "spotify://"
-description = "Music & podcast streaming player"
-category = "Media"
 
 [[app]]
 name = "VS Code"
 aliases = ["code", "vscode"]
 target = "vscode://"
-description = "Visual Studio Code editor"
-category = "Development"
 
 [[app]]
 name = "GitHub"
 aliases = ["gh"]
 target = "https://github.com"
-description = "Code repositories & developer platform"
-category = "Development"
 
 [[app]]
 name = "Windows Terminal"
 aliases = ["terminal", "wt"]
 target = "wt.exe"
-description = "Modern command-line interface"
-category = "System"
 
 [[app]]
 name = "Notepad"
 aliases = ["pad"]
 target = "notepad.exe"
-description = "Quick text notes & scratchpad"
-category = "System"
+
+[[app]]
+name = "Youtube"
+aliases = ["yt"]
+target = "https://youtube.com"

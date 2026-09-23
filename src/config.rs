@@ -10,8 +10,6 @@ pub struct Config {
 }
 
 impl Config {
-    /// Loads configuration from `apps.toml` (strictly read-only).
-    /// If the file does not exist, falls back to default applications without writing to disk.
     pub fn load() -> Self {
         let path = Self::resolve_config_path();
 
@@ -24,7 +22,6 @@ impl Config {
                     };
                 }
                 Ok(_) => {
-                    // File had no valid application entries
                 }
                 Err(err) => {
                     eprintln!(
@@ -42,15 +39,12 @@ impl Config {
         }
     }
 
-    /// Resolves the path to `apps.toml` (read-only)
     pub fn resolve_config_path() -> PathBuf {
-        // 1. Current working directory
         let local_path = PathBuf::from("apps.toml");
         if local_path.exists() {
             return local_path;
         }
 
-        // 2. Next to the executable
         if let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf)) {
             let exe_config = exe_dir.join("apps.toml");
             if exe_config.exists() {
@@ -58,18 +52,15 @@ impl Config {
             }
         }
 
-        // Default path reference
         local_path
     }
 
-    /// Reads and parses applications from a TOML file (strictly read-only)
     pub fn load_from_path(path: &Path) -> io::Result<Vec<Application>> {
         let content = fs::read_to_string(path)?;
         Ok(parse_apps_toml(&content))
     }
 }
 
-/// Parses applications from a TOML string (supporting both [[app]] tables and [apps] key-values)
 pub fn parse_apps_toml(content: &str) -> Vec<Application> {
     let mut apps = Vec::new();
     let mut current_app: Option<ApplicationBuilder> = None;
@@ -78,7 +69,6 @@ pub fn parse_apps_toml(content: &str) -> Vec<Application> {
     for line in content.lines() {
         let trimmed = line.trim();
 
-        // Skip comments and blank lines
         if trimmed.is_empty() || trimmed.starts_with('#') {
             continue;
         }
