@@ -52,3 +52,8 @@ target = "https://gemini.google.com/app"
 name = "ChatGPT"
 aliases = ["chatgpt"]
 target = "https://chatgpt.com/"
+
+[[app]]
+name = "Moodle"
+aliases = ["moodle"]
+target = "https://moodle.ccun.edu.kh/course/index.php?categoryid=46"
